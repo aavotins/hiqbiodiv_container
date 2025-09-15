@@ -46,7 +46,7 @@ RUN Rscript -e "install.packages(c( \
 # Install whitebox tools binary inside the image
 RUN Rscript -e "whitebox::install_whitebox(platform = 'linux_amd64', force = TRUE)"
 
-# OPTIONAL: test and cache Whitebox path
+# Test and cache Whitebox path
 RUN Rscript -e "whitebox::wbt_init()"
 
 # Install GitHub package: egvtools
