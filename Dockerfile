@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtiff5-dev \
     libjpeg-dev \
     libopenblas-dev \
+    libabsl-dev \
     unzip \
     curl \
     wget \
