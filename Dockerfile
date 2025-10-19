@@ -49,7 +49,7 @@ RUN Rscript -e "whitebox::install_whitebox(platform = 'linux_amd64', force = TRU
 # Test and cache Whitebox path
 RUN Rscript -e "whitebox::wbt_init()"
 
-# Install GitHub package: egvtools 2025-10-16
+# Install GitHub package: egvtools 2025-10-19
 RUN Rscript -e "remotes::install_github('aavotins/egvtools')"
 
 # Clean up (optional)
