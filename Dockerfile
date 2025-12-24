@@ -42,7 +42,7 @@ RUN Rscript -e "install.packages(c( \
   'whitebox', 'landscapemetrics', 'arrow', 'sfarrow', 'readxl', 'openxlsx', \
   'patchwork', 'usdm', 'maps', 'maxnet', 'ecospat', 'plotROC', 'rasterVis', \
   'SDMtune', 'ENMeval', 'zeallot', 'ggview', 'scales', 'ggthemes', 'ggtext', \
-  'httr', 'ows4R', 'doParallel', 'foreach' \
+  'httr', 'ows4R', 'doParallel', 'foreach', \
   'tidyverse', 'blockCV', 'overlapping' \
 ), repos = 'https://cloud.r-project.org', dependencies = TRUE)"
 
