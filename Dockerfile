@@ -1,5 +1,5 @@
 # Base image: includes geospatial R ecosystem
-FROM rocker/geospatial:4.5.1
+FROM rocker/geospatial:4.5.2
 
 # Set environment
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libopenblas-dev \
     libabsl-dev \
+    libicu-dev \
+    libsqlite3-dev \
     unzip \
     curl \
     wget \
@@ -41,7 +43,7 @@ RUN Rscript -e "install.packages(c( \
   'patchwork', 'usdm', 'maps', 'maxnet', 'ecospat', 'plotROC', 'rasterVis', \
   'SDMtune', 'ENMeval', 'zeallot', 'ggview', 'scales', 'ggthemes', 'ggtext', \
   'httr', 'ows4R', 'doParallel', 'foreach' \
-  'blockCV', 'overlapping' \
+  'tidyverse', 'blockCV', 'overlapping' \
 ), repos = 'https://cloud.r-project.org', dependencies = TRUE)"
 
 # Install whitebox tools binary inside the image
