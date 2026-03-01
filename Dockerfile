@@ -43,7 +43,7 @@ RUN Rscript -e "install.packages(c( \
   'patchwork', 'usdm', 'maps', 'maxnet', 'ecospat', 'plotROC', 'rasterVis', \
   'SDMtune', 'ENMeval', 'zeallot', 'ggview', 'scales', 'ggthemes', 'ggtext', \
   'httr', 'ows4R', 'doParallel', 'foreach', \
-  'tidyverse', 'blockCV', 'overlapping' \
+  'tidyverse', 'blockCV', 'overlapping', 'fastfocal', 'glmmTMB' \
 ), repos = 'https://cloud.r-project.org', dependencies = TRUE)"
 
 # Install whitebox tools binary inside the image
