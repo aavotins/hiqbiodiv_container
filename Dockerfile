@@ -56,7 +56,10 @@ RUN Rscript -e "whitebox::wbt_init()"
 RUN Rscript -e "remotes::install_github('aavotins/egvtools')"
 RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 
-# Clean up (optional)
+# Install GitHub package: egvtools 2026-09-19
+RUN Rscript -e "remotes::install_github('aavotins/sdmhelpers')"
+
+# Clean up
 RUN rm -rf /tmp/* /var/tmp/* /root/.cache
 
 # Set default run behavior
