@@ -6,5 +6,5 @@ export SINGULARITY_CACHEDIR=/home/vpp-hiqbiodiv-allocation/$USER/appt_cache
 
 export TMPDIR=/home/vpp-hiqbiodiv-allocation/$USER/build_tmp
 
-singularity pull --name hiqbiodiv-container_20260919.sif \
+singularity pull --name hiqbiodiv-container_20260926.sif \
   docker://aavotins/hiqbiodiv-container:latest

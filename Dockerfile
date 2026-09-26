@@ -40,20 +40,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Zonation 5
-ARG ZONATION_VERSION=2.4
-
-RUN wget -q \
-      https://github.com/zonationteam/Zonation5/releases/download/v${ZONATION_VERSION}/Zonation5_Linux.zip \
-      -O /tmp/Zonation5_Linux.zip && \
-    cd /tmp && \
-    unzip Zonation5_Linux.zip && \
-    chmod +x zonation5 && \
-    ./zonation5 --appimage-extract && \
-    mv squashfs-root /opt/zonation5 && \
-    ln -s /opt/zonation5/AppRun /usr/local/bin/zonation5 && \
-    rm -f /tmp/zonation5 /tmp/Zonation5_Linux.zip
-
 
 # Install CRAN packages
 RUN Rscript -e "install.packages(c( \
@@ -77,6 +63,30 @@ RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 
 # Install GitHub package: egvtools 2026-09-19
 RUN Rscript -e "remotes::install_github('aavotins/sdmhelpers')"
+
+# Zonation 5
+
+ARG ZONATION_VERSION=2.4
+
+RUN wget -q \
+      "https://github.com/zonationteam/Zonation5/releases/download/v${ZONATION_VERSION}/Zonation5_Linux.zip" \
+      -O /tmp/Zonation5_Linux.zip && \
+    cd /tmp && \
+    unzip Zonation5_Linux.zip && \
+    chmod +x zonation5 && \
+    ./zonation5 --appimage-extract && \
+    mv squashfs-root /opt/zonation5 && \
+    chmod -R go=u /opt/zonation5 && \
+    rm -f /tmp/zonation5 /tmp/Zonation5_Linux.zip
+
+RUN printf '%s\n' \
+    '#!/bin/sh' \
+    'APPDIR=/opt/zonation5 exec /opt/zonation5/AppRun "$@"' \
+    > /usr/local/bin/zonation5 && \
+    chmod +x /usr/local/bin/zonation5
+
+RUN zonation5 --version
+
 
 # Clean up
 RUN rm -rf /tmp/* /var/tmp/* /root/.cache
