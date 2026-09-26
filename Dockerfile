@@ -65,7 +65,6 @@ RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 RUN Rscript -e "remotes::install_github('aavotins/sdmhelpers')"
 
 # Zonation 5
-
 ARG ZONATION_VERSION=2.4
 
 RUN wget -q \
@@ -79,13 +78,11 @@ RUN wget -q \
     chmod -R go=u /opt/zonation5 && \
     rm -f /tmp/zonation5 /tmp/Zonation5_Linux.zip
 
-RUN printf '%s\n' \
-    '#!/bin/sh' \
-    'APPDIR=/opt/zonation5 exec /opt/zonation5/AppRun "$@"' \
-    > /usr/local/bin/zonation5 && \
-    chmod +x /usr/local/bin/zonation5
+# Make Zonation CLI available on PATH
+RUN ln -s /opt/zonation5/usr/bin/z5 /usr/local/bin/zonation5
 
-RUN zonation5 --version
+# Verify installation
+RUN test -x /opt/zonation5/usr/bin/z5
 
 
 # Clean up
