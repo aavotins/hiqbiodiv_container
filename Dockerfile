@@ -1,5 +1,5 @@
 # Base image: includes geospatial R ecosystem
-FROM rocker/geospatial:4.5.2
+FROM rocker/geospatial:4.6.1
 
 # Set environment
 ENV DEBIAN_FRONTEND=noninteractive
@@ -29,12 +29,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libabsl-dev \
     libicu-dev \
     libsqlite3-dev \
+    libexpat1 \
+    libkeyutils1 \
+    libglib2.0-0 \
+    libgl1 \
     unzip \
     curl \
     wget \
     ca-certificates \
     fonts-dejavu-core && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Zonation 5
+ARG ZONATION_VERSION=2.4
+
+RUN wget -q \
+      https://github.com/zonationteam/Zonation5/releases/download/v${ZONATION_VERSION}/Zonation5_Linux.zip \
+      -O /tmp/Zonation5_Linux.zip && \
+    cd /tmp && \
+    unzip Zonation5_Linux.zip && \
+    chmod +x zonation5 && \
+    ./zonation5 --appimage-extract && \
+    mv squashfs-root /opt/zonation5 && \
+    ln -s /opt/zonation5/AppRun /usr/local/bin/zonation5 && \
+    rm -f /tmp/zonation5 /tmp/Zonation5_Linux.zip
+
 
 # Install CRAN packages
 RUN Rscript -e "install.packages(c( \
