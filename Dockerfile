@@ -57,7 +57,7 @@ RUN Rscript -e "whitebox::install_whitebox(platform = 'linux_amd64', force = TRU
 # Test and cache Whitebox path
 RUN Rscript -e "whitebox::wbt_init()"
 
-# Install GitHub package: egvtools 2025-10-19
+# Install GitHub package: gbif.range
 RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 
 # egvtools v0.1.0
