@@ -63,13 +63,13 @@ RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 # egvtools v0.1.0
 RUN Rscript -e "remotes::install_github( \
   'aavotins/egvtools@v0.1.0', \
-  dependencies = TRUE, \
+  dependencies = TRUE \
   )"
 
 # sdmhelpers v0.1.0
 RUN Rscript -e "remotes::install_github( \
   'aavotins/sdmhelpers@v0.1.0', \
-  dependencies = TRUE, \
+  dependencies = TRUE \
   )"
 
 # Verify installations
