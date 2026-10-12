@@ -60,13 +60,24 @@ RUN Rscript -e "whitebox::wbt_init()"
 # Install GitHub package: egvtools 2025-10-19
 RUN Rscript -e "remotes::install_github('8Ginette8/gbif.range')"
 
-# HiQBioDiv R packages: stable releases
-ARG EGVTOOLS_VERSION=v0.1.0
-ARG SDMHELPERS_VERSION=v0.1.0
-
+# egvtools v0.1.0
 RUN Rscript -e "remotes::install_github( \
-  paste0('aavotins/egvtools@', Sys.getenv('EGVTOOLS_VERSION')), \
-  dependencies = NA, upgrade = 'never')"
+  'aavotins/egvtools@v0.1.0', \
+  dependencies = TRUE, \
+  )"
+
+# sdmhelpers v0.1.0
+RUN Rscript -e "remotes::install_github( \
+  'aavotins/sdmhelpers@v0.1.0', \
+  dependencies = TRUE, \
+  )"
+
+# Verify installations
+RUN Rscript -e "\
+  stopifnot( \
+    as.character(packageVersion('egvtools')) == '0.1.0', \
+    as.character(packageVersion('sdmhelpers')) == '0.1.0' \
+  )"
 
 # Zonation 5
 ARG ZONATION_VERSION=2.4
