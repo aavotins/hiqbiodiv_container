@@ -21,6 +21,7 @@ RUN set -eux; \
       libfontconfig1-dev libfreetype6-dev libpng-dev libtiff-dev \
       libjpeg-dev libopenblas-dev libabsl-dev libicu-dev libsqlite3-dev \
       libexpat1 libkeyutils1 libglib2.0-0 libgl1 \
+      libsecret-1-0 libsecret-1-dev \
       unzip curl wget ca-certificates fonts-dejavu-core; \
     rm -rf /var/lib/apt/lists/*
 
@@ -37,16 +38,15 @@ RUN Rscript -e "cat('CRAN repository:', getOption('repos')[['CRAN']], '\n')" && 
       tidyverse blockCV overlapping fastfocal \
     && rm -rf /tmp/downloaded_packages
 
-# Diagnose ows4R installation and namespace loading
+# Verify keyring and ows4R, including their shared libraries
 RUN Rscript -e "\
-  cat('ows4R installation status:\n'); \
-  print(installed.packages()[ \
-    intersect('ows4R', rownames(installed.packages())), \
-    c('Package', 'Version'), drop = FALSE \
-  ]); \
-  cat('Testing ows4R namespace:\n'); \
+  library(keyring); \
   library(ows4R); \
-  cat('ows4R loaded successfully\n')"
+  cat('keyring version:', \
+      as.character(packageVersion('keyring')), '\n'); \
+  cat('ows4R version:', \
+      as.character(packageVersion('ows4R')), '\n'); \
+  cat('keyring and ows4R: PASSED\n')"
 
 # Other GitHub package (unversioned upstream: record its commit in the manifest).
 RUN Rscript -e "\
