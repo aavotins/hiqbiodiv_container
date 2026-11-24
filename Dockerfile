@@ -37,6 +37,17 @@ RUN Rscript -e "cat('CRAN repository:', getOption('repos')[['CRAN']], '\n')" && 
       tidyverse blockCV overlapping fastfocal \
     && rm -rf /tmp/downloaded_packages
 
+# Diagnose ows4R installation and namespace loading
+RUN Rscript -e "\
+  cat('ows4R installation status:\n'); \
+  print(installed.packages()[ \
+    intersect('ows4R', rownames(installed.packages())), \
+    c('Package', 'Version'), drop = FALSE \
+  ]); \
+  cat('Testing ows4R namespace:\n'); \
+  library(ows4R); \
+  cat('ows4R loaded successfully\n')"
+
 # Other GitHub package (unversioned upstream: record its commit in the manifest).
 RUN Rscript -e "\
   remotes::install_github('8Ginette8/gbif.range', \
