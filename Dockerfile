@@ -7,11 +7,12 @@ LABEL org.opencontainers.image.title="HiQBioDiv Container" \
       org.opencontainers.image.source="https://github.com/aavotins/hiqbiodiv_container" \
       org.opencontainers.image.description="Reproducible geospatial, SDM and conservation prioritisation environment"
 
+# WhiteboxTools will be installed inside the image, not a user's home directory.
 ENV DEBIAN_FRONTEND=noninteractive \
     CRAN=https://p3m.dev/cran/__linux__/noble/latest \
     R_WHITEBOX_EXE_PATH=/opt/whitebox/WBT/whitebox_tools
 
-# Required Linux libraries, utilities and certificates.
+# Required Linux libraries, utilities, and certificates.
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -25,9 +26,8 @@ RUN set -eux; \
       unzip curl wget ca-certificates fonts-dejavu-core; \
     rm -rf /var/lib/apt/lists/*
 
-# Use Rocker's amd64 Ubuntu Noble binary CRAN mirror.
-# --error makes an individual installation failure fail the Docker build.
-# Required dependencies here; the two custom packages get Suggests below.
+# Install CRAN packages from Rocker's configured binary repository.
+# --error fails the build on installation errors.
 RUN Rscript -e "cat('CRAN repository:', getOption('repos')[['CRAN']], '\n')" && \
     install2.r --error --skipinstalled --deps NA --repos getOption \
       remotes sf terra raster fasterize exactextractr \
@@ -38,58 +38,43 @@ RUN Rscript -e "cat('CRAN repository:', getOption('repos')[['CRAN']], '\n')" && 
       tidyverse blockCV overlapping fastfocal \
     && rm -rf /tmp/downloaded_packages
 
-# Verify keyring and ows4R, including their shared libraries
+# Test keyring's native library dependency, used indirectly by ows4R.
 RUN Rscript -e "\
   library(keyring); \
   library(ows4R); \
-  cat('keyring version:', \
-      as.character(packageVersion('keyring')), '\n'); \
-  cat('ows4R version:', \
-      as.character(packageVersion('ows4R')), '\n'); \
+  cat('keyring version:', as.character(packageVersion('keyring')), '\n'); \
+  cat('ows4R version:', as.character(packageVersion('ows4R')), '\n'); \
   cat('keyring and ows4R: PASSED\n')"
 
-
-# GitHub packages: authenticated downloads using a temporary
-# BuildKit secret. The token is never stored in the image.
-
-# gbif.range
+# Install GitHub packages using a BuildKit secret supplied by GitHub Actions.
+# The GITHUB_PAT value is available only to these RUN commands; it is not
+# persisted as an ENV variable or included in the final image.
 RUN --mount=type=secret,id=github_token,required=true \
     GITHUB_PAT="$(cat /run/secrets/github_token)" \
     Rscript -e "\
       remotes::install_github('8Ginette8/gbif.range', \
-        dependencies = NA, \
-        upgrade = 'never', \
-        build_vignettes = FALSE); \
+        dependencies = NA, upgrade = 'never', build_vignettes = FALSE); \
       stopifnot(requireNamespace('gbif.range', quietly = TRUE))"
 
-# egvtools v0.1.0, including suggested dependencies
 RUN --mount=type=secret,id=github_token,required=true \
     GITHUB_PAT="$(cat /run/secrets/github_token)" \
     Rscript -e "\
       remotes::install_github('aavotins/egvtools@v0.1.0', \
-        dependencies = TRUE, \
-        upgrade = 'never', \
-        build_vignettes = FALSE); \
+        dependencies = TRUE, upgrade = 'never', build_vignettes = FALSE); \
       stopifnot(requireNamespace('egvtools', quietly = TRUE))"
 
-# sdmhelpers v0.1.0, including suggested dependencies
 RUN --mount=type=secret,id=github_token,required=true \
     GITHUB_PAT="$(cat /run/secrets/github_token)" \
     Rscript -e "\
       remotes::install_github('aavotins/sdmhelpers@v0.1.0', \
-        dependencies = TRUE, \
-        upgrade = 'never', \
-        build_vignettes = FALSE); \
+        dependencies = TRUE, upgrade = 'never', build_vignettes = FALSE); \
       stopifnot(requireNamespace('sdmhelpers', quietly = TRUE))"
 
-
-# Install glmmTMB last, using Rocker's precompiled CRAN binaries.
-# This helps avoid expensive source compilation and TMB dependency changes later.
+# Install glmmTMB after the other R packages, then verify its namespace.
 RUN install2.r --error --deps NA --repos getOption glmmTMB && \
     Rscript -e "library(glmmTMB); print(packageVersion('glmmTMB'))"
 
-# Install WhiteboxTools into a fixed path inside the image (NOT /root).
-# WhiteboxTools is subsequently discovered by all Singularity users via ENV.
+# Install the WhiteboxTools executable in a fixed, container-owned directory.
 RUN mkdir -p /opt/whitebox && \
     Rscript -e "\
       whitebox::install_whitebox( \
@@ -102,11 +87,9 @@ RUN mkdir -p /opt/whitebox && \
       print(v)" && \
     chmod -R a+rX /opt/whitebox
 
-
-# Expose WhiteboxTools through the standard system PATH.
-# The actual binary and its supporting files remain in /opt/whitebox.
-# This works without access to any user's home directory.
-
+# Make WhiteboxTools discoverable on PATH even if Singularity does not pass
+# R_WHITEBOX_EXE_PATH through to the container. No access to HOME is required.
+# The wrapper keeps the binary and its associated resources in /opt/whitebox.
 RUN printf '%s\n' \
       '#!/bin/sh' \
       'exec /opt/whitebox/WBT/whitebox_tools "$@"' \
@@ -115,24 +98,27 @@ RUN printf '%s\n' \
     test -x /opt/whitebox/WBT/whitebox_tools && \
     command -v whitebox_tools
 
-# Verify that R finds the container's WhiteboxTools executable
-# even when R_WHITEBOX_EXE_PATH is absent.
+# Verify the PATH-based fallback WITHOUT R_WHITEBOX_EXE_PATH.
+# unname() avoids a false failure when wbt_exe_path() returns a named string.
 RUN env -u R_WHITEBOX_EXE_PATH \
     Rscript --vanilla -e "\
       library(whitebox); \
-      p <- wbt_exe_path(shell_quote = FALSE); \
+      p <- unname(as.character(wbt_exe_path(shell_quote = FALSE))); \
       cat('WhiteboxTools executable:', p, '\n'); \
       stopifnot( \
-        identical(p, '/usr/local/bin/whitebox_tools'), \
+        length(p) == 1L, \
+        nzchar(p), \
+        p == '/usr/local/bin/whitebox_tools', \
+        file.exists(p), \
         file.access(p, 1L) == 0L \
       ); \
-      print(wbt_version()); \
+      v <- wbt_version(); \
+      stopifnot(length(v) > 0L, any(grepl('WhiteboxTools', v))); \
+      print(v); \
       cat('Container WhiteboxTools: PASS\n')"
 
-
-# Zonation 5: extract AppImage so Singularity does not need FUSE.
+# Extract Zonation 5 AppImage so Singularity can run it without FUSE.
 ARG ZONATION_VERSION=2.4
-
 RUN set -eux; \
     wget -q --tries=3 --timeout=60 \
       "https://github.com/zonationteam/Zonation5/releases/download/v${ZONATION_VERSION}/Zonation5_Linux.zip" \
@@ -153,8 +139,7 @@ RUN set -eux; \
     command -v z5; \
     rm -f /tmp/zonation5 /tmp/Zonation5_Linux.zip
 
-# Build-time verification: all explicitly requested packages and dependencies.
-# Also check Suggests in the pinned DESCRIPTION files for both custom packages.
+# Verify explicitly requested R packages plus key supporting packages.
 RUN Rscript -e "\
   required <- c( \
     'remotes','sf','terra','raster','fasterize','exactextractr', \
@@ -177,7 +162,7 @@ RUN Rscript -e "\
   cat('Verified', length(all_pkgs), 'R packages\n'); \
   for (pkg in all_pkgs) cat(pkg, as.character(packageVersion(pkg)), '\n')"
 
-# Functional glmmTMB smoke test, including compiled TMB interface.
+# Functional glmmTMB smoke test, including its compiled TMB interface.
 RUN Rscript -e "\
   options(warn = 2); \
   library(glmmTMB); \
@@ -185,7 +170,7 @@ RUN Rscript -e "\
   stopifnot(is.finite(as.numeric(logLik(fit)))); \
   cat('glmmTMB smoke test: PASSED\n')"
 
-# Permanently record versions and GitHub SHAs inside the image.
+# Record installed versions and GitHub package commit identifiers in the image.
 RUN mkdir -p /opt/hiqbiodiv && \
     Rscript -e "\
       ip <- installed.packages(); \
@@ -202,7 +187,7 @@ RUN mkdir -p /opt/hiqbiodiv && \
       write.csv(d, '/opt/hiqbiodiv/github-packages.csv', row.names = FALSE)" && \
     printf 'Zonation 5 v%s\n' "$ZONATION_VERSION" > /opt/hiqbiodiv/zonation-version.txt
 
-# The main installation must be complete before cleanup.
+# Remove build-time temporary files after all installations have completed.
 RUN rm -rf /tmp/* /var/tmp/* /root/.cache
 
 CMD ["R"]
