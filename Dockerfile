@@ -132,7 +132,7 @@ RUN set -eux; \
     test -x squashfs-root/usr/bin/z5; \
     mv squashfs-root /opt/zonation5; \
     chmod -R a+rX /opt/zonation5; \
-    printf '%s\n' '#!/bin/sh' 'exec /opt/zonation5/AppRun "$@"' > /usr/local/bin/zonation5; \
+    printf '%s\n' '#!/bin/sh' 'export APPDIR=/opt/zonation5' 'exec "$APPDIR/AppRun" "$@"' > /usr/local/bin/zonation5; \
     chmod 755 /usr/local/bin/zonation5; \
     ln -s /usr/local/bin/zonation5 /usr/local/bin/z5; \
     command -v zonation5; \
@@ -186,6 +186,12 @@ RUN mkdir -p /opt/hiqbiodiv && \
       })); \
       write.csv(d, '/opt/hiqbiodiv/github-packages.csv', row.names = FALSE)" && \
     printf 'Zonation 5 v%s\n' "$ZONATION_VERSION" > /opt/hiqbiodiv/zonation-version.txt
+
+# Functional Zonation 5 smoke tests.
+RUN set -eux; \
+    zonation5 --help >/dev/null; \
+    zonation5 --version; \
+    echo "Zonation 5 executable: PASSED"
 
 # Remove build-time temporary files after all installations have completed.
 RUN rm -rf /tmp/* /var/tmp/* /root/.cache
