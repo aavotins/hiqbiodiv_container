@@ -102,6 +102,34 @@ RUN mkdir -p /opt/whitebox && \
       print(v)" && \
     chmod -R a+rX /opt/whitebox
 
+
+# Expose WhiteboxTools through the standard system PATH.
+# The actual binary and its supporting files remain in /opt/whitebox.
+# This works without access to any user's home directory.
+
+RUN printf '%s\n' \
+      '#!/bin/sh' \
+      'exec /opt/whitebox/WBT/whitebox_tools "$@"' \
+      > /usr/local/bin/whitebox_tools && \
+    chmod 755 /usr/local/bin/whitebox_tools && \
+    test -x /opt/whitebox/WBT/whitebox_tools && \
+    command -v whitebox_tools
+
+# Verify that R finds the container's WhiteboxTools executable
+# even when R_WHITEBOX_EXE_PATH is absent.
+RUN env -u R_WHITEBOX_EXE_PATH \
+    Rscript --vanilla -e "\
+      library(whitebox); \
+      p <- wbt_exe_path(shell_quote = FALSE); \
+      cat('WhiteboxTools executable:', p, '\n'); \
+      stopifnot( \
+        identical(p, '/usr/local/bin/whitebox_tools'), \
+        file.access(p, 1L) == 0L \
+      ); \
+      print(wbt_version()); \
+      cat('Container WhiteboxTools: PASS\n')"
+
+
 # Zonation 5: extract AppImage so Singularity does not need FUSE.
 ARG ZONATION_VERSION=2.4
 
