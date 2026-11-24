@@ -48,22 +48,40 @@ RUN Rscript -e "\
       as.character(packageVersion('ows4R')), '\n'); \
   cat('keyring and ows4R: PASSED\n')"
 
-# Other GitHub package (unversioned upstream: record its commit in the manifest).
-RUN Rscript -e "\
-  remotes::install_github('8Ginette8/gbif.range', \
-    dependencies = NA, upgrade = 'never', build_vignettes = FALSE); \
-  stopifnot(requireNamespace('gbif.range', quietly = TRUE))"
 
-# Stable HiQBioDiv packages, including their Suggested packages.
-RUN Rscript -e "\
-  remotes::install_github('aavotins/egvtools@v0.1.0', \
-    dependencies = TRUE, upgrade = 'never', build_vignettes = FALSE); \
-  stopifnot(requireNamespace('egvtools', quietly = TRUE))"
+# GitHub packages: authenticated downloads using a temporary
+# BuildKit secret. The token is never stored in the image.
 
-RUN Rscript -e "\
-  remotes::install_github('aavotins/sdmhelpers@v0.1.0', \
-    dependencies = TRUE, upgrade = 'never', build_vignettes = FALSE); \
-  stopifnot(requireNamespace('sdmhelpers', quietly = TRUE))"
+# gbif.range
+RUN --mount=type=secret,id=github_token,required=true \
+    GITHUB_PAT="$(cat /run/secrets/github_token)" \
+    Rscript -e "\
+      remotes::install_github('8Ginette8/gbif.range', \
+        dependencies = NA, \
+        upgrade = 'never', \
+        build_vignettes = FALSE); \
+      stopifnot(requireNamespace('gbif.range', quietly = TRUE))"
+
+# egvtools v0.1.0, including suggested dependencies
+RUN --mount=type=secret,id=github_token,required=true \
+    GITHUB_PAT="$(cat /run/secrets/github_token)" \
+    Rscript -e "\
+      remotes::install_github('aavotins/egvtools@v0.1.0', \
+        dependencies = TRUE, \
+        upgrade = 'never', \
+        build_vignettes = FALSE); \
+      stopifnot(requireNamespace('egvtools', quietly = TRUE))"
+
+# sdmhelpers v0.1.0, including suggested dependencies
+RUN --mount=type=secret,id=github_token,required=true \
+    GITHUB_PAT="$(cat /run/secrets/github_token)" \
+    Rscript -e "\
+      remotes::install_github('aavotins/sdmhelpers@v0.1.0', \
+        dependencies = TRUE, \
+        upgrade = 'never', \
+        build_vignettes = FALSE); \
+      stopifnot(requireNamespace('sdmhelpers', quietly = TRUE))"
+
 
 # Install glmmTMB last, using Rocker's precompiled CRAN binaries.
 # This helps avoid expensive source compilation and TMB dependency changes later.
